@@ -1,12 +1,11 @@
-
 {
-  "short_name": "Calisthenics",
-  "name": "Calisthenics Workout Tracker",
+  "short_name": "Tracker",
+  "name": "Calisthenics Tracker",
   "icons": [
     {
-      "src": "icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
     }
   ],
   "start_url": ".",
