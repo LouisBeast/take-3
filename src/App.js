@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 
 const workouts = [
@@ -49,7 +48,16 @@ const workouts = [
 ];
 
 function App() {
-  const [logs, setLogs] = useState({});
+  // Load saved logs from localStorage or initialize empty object
+  const [logs, setLogs] = useState(() => {
+    const saved = localStorage.getItem('workoutLogs');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Save logs to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('workoutLogs', JSON.stringify(logs));
+  }, [logs]);
 
   const handleLogChange = (day, exercise, value) => {
     setLogs(prev => ({
