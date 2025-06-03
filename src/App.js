@@ -19,6 +19,11 @@ export default function App() {
 
   const [sessions, setSessions] = useState([]);
 
+  // Rest timer states
+  const [restTime, setRestTime] = useState(60); // seconds
+  const [timerActive, setTimerActive] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(restTime);
+
   // Load from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("calisthenics_sessions");
@@ -30,6 +35,18 @@ export default function App() {
     localStorage.setItem("calisthenics_sessions", JSON.stringify(sessions));
   }, [sessions]);
 
+  // Timer effect
+  useEffect(() => {
+    let timer = null;
+    if (timerActive && secondsLeft > 0) {
+      timer = setTimeout(() => setSecondsLeft(secondsLeft - 1), 1000);
+    } else if (secondsLeft === 0 && timerActive) {
+      setTimerActive(false);
+      alert("Rest time is over! Ready for next set?");
+    }
+    return () => clearTimeout(timer);
+  }, [timerActive, secondsLeft]);
+
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
@@ -37,7 +54,8 @@ export default function App() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!form.exercise || !form.reps || !form.sets) return alert("Please fill in required fields.");
+    if (!form.exercise || !form.reps || !form.sets)
+      return alert("Please fill in required fields.");
     setSessions((prev) => [...prev, form]);
     setForm({
       exercise: "",
@@ -56,8 +74,35 @@ export default function App() {
     }
   }
 
+  function startRest() {
+    if (!timerActive) {
+      setSecondsLeft(restTime);
+      setTimerActive(true);
+    }
+  }
+
+  function resetRest() {
+    setTimerActive(false);
+    setSecondsLeft(restTime);
+  }
+
+  function handleRestTimeChange(e) {
+    const val = parseInt(e.target.value, 10);
+    if (!isNaN(val) && val > 0) {
+      setRestTime(val);
+      if (!timerActive) setSecondsLeft(val);
+    }
+  }
+
   return (
-    <div style={{ maxWidth: 500, margin: "auto", padding: 16, fontFamily: "sans-serif" }}>
+    <div
+      style={{
+        maxWidth: 500,
+        margin: "auto",
+        padding: 16,
+        fontFamily: "sans-serif",
+      }}
+    >
       <h1>Calisthenics Tracker</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
         <label>
@@ -160,6 +205,47 @@ export default function App() {
           Add Session
         </button>
       </form>
+
+      {/* Rest Timer Section */}
+      <div
+        style={{
+          marginTop: 20,
+          padding: 12,
+          border: "1px solid #ccc",
+          borderRadius: 6,
+        }}
+      >
+        <h3>Rest Timer</h3>
+        <label>
+          Rest duration (seconds):{" "}
+          <input
+            type="number"
+            value={restTime}
+            onChange={handleRestTimeChange}
+            min="10"
+            max="300"
+            style={{ width: 60 }}
+            disabled={timerActive}
+          />
+        </label>
+        <div style={{ marginTop: 8, fontSize: "1.5rem" }}>
+          {timerActive ? (
+            <span>Time left: {secondsLeft}s</span>
+          ) : (
+            <span>Timer is stopped</span>
+          )}
+        </div>
+        <button
+          onClick={startRest}
+          disabled={timerActive}
+          style={{ marginRight: 8 }}
+        >
+          Start Rest
+        </button>
+        <button onClick={resetRest} disabled={!timerActive}>
+          Reset
+        </button>
+      </div>
 
       <hr />
 
