@@ -1,92 +1,68 @@
-
-import { useState, useEffect } from 'react';
-import './App.css';
-
-const workouts = [
-  {
-    day: 'Push',
-    exercises: ['Weighted Dips', 'Pseudo Planche Push-ups', 'Pike Push-ups', 'Incline/Decline Push-ups', 'Triceps Band Pushdowns / Diamond Push-ups'],
-  },
-  {
-    day: 'Pull',
-    exercises: ['Pull-ups (Unassisted)', 'Assisted Pull-ups (Band)', 'Negative Pull-ups', 'Australian / Ring Rows', 'Banded Curls / Towel Rows', 'Dead Hangs / Scap Pull-ups'],
-  },
-  {
-    day: 'Legs & Core',
-    exercises: ['Bulgarian Split Squats', 'Wall Sits or Step-ups', 'Glute Bridges / Hip Thrusts', 'Hanging Leg Raises', 'Planks (Side/RKC)', 'Dragon Flag Progressions / Reverse Crunches'],
-  },
-  {
-    day: 'Mobility & Skills',
-    exercises: ['Shoulder Dislocates (banded)', 'Wrist Prep & Elbow Rotations', 'Thoracic Bridges / Cat-Cow', 'Scapula Push-ups', 'Wall Handstand Holds', 'Tuck Lever or Skin-the-Cat Progressions'],
-  },
-];
+import React, { useState, useEffect } from "react";
 
 function App() {
-  const today = new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [logs, setLogs] = useState(() => {
-    const saved = localStorage.getItem('workoutLogsV2');
-    return saved ? JSON.parse(saved) : {};
+  const [sessions, setSessions] = useState(() => {
+    const stored = localStorage.getItem("workout_sessions");
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const [form, setForm] = useState({
+    date: new Date().toISOString().split("T")[0],
+    exercise: "",
+    sets: "",
+    reps: "",
+    weight: "",
+    notes: "",
   });
 
   useEffect(() => {
-    localStorage.setItem('workoutLogsV2', JSON.stringify(logs));
-  }, [logs]);
+    localStorage.setItem("workout_sessions", JSON.stringify(sessions));
+  }, [sessions]);
 
-  const handleLogChange = (day, exercise, value) => {
-    setLogs(prev => ({
-      ...prev,
-      [selectedDate]: {
-        ...prev[selectedDate],
-        [day]: {
-          ...(prev[selectedDate]?.[day] || {}),
-          [exercise]: value,
-        }
-      }
-    }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const exportToCSV = () => {
-    let csv = "Date,Day,Exercise,Entry\n";
-    for (const date in logs) {
-      for (const day in logs[date]) {
-        for (const exercise in logs[date][day]) {
-          const entry = logs[date][day][exercise].replace(/\n/g, ' ');
-          csv += `\${date},\${day},\${exercise},\${entry}\n`;
-        }
-      }
-    }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSessions([...sessions, { ...form }]);
+    setForm({ ...form, exercise: "", sets: "", reps: "", weight: "", notes: "" });
+  };
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'workout_logs.csv';
-    link.click();
+  const recommended = {
+    "Pull-ups": "3 sets of 5–8 reps",
+    "Assisted Pull-ups": "3 sets of 8 reps",
+    Dips: "4 sets of 8–10 reps",
+    "Weighted Dips": "3 sets of 6–7 reps (10kg)",
   };
 
   return (
-    <div className="App">
-      <h1>Calisthenics Tracker</h1>
-      <label>
-        Workout Date:
-        <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-      </label>
-      {workouts.map(({ day, exercises }) => (
-        <div className="card" key={day}>
-          <h2>{day}</h2>
-          {exercises.map(exercise => (
-            <div key={exercise} className="exercise">
-              <label>{exercise}</label>
-              <textarea
-                placeholder="Reps, weight, notes..."
-                value={logs[selectedDate]?.[day]?.[exercise] || ''}
-                onChange={(e) => handleLogChange(day, exercise, e.target.value)}
-              />
-            </div>
-          ))}
-        </div>
-      ))}
-      <button onClick={exportToCSV}>Export All Logs (CSV)</button>
+    <div className="p-4 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Calisthenics Tracker</h1>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input type="date" name="date" value={form.date} onChange={handleChange} className="w-full p-2 border" />
+        <input type="text" name="exercise" placeholder="Exercise" value={form.exercise} onChange={handleChange} className="w-full p-2 border" />
+        {form.exercise && recommended[form.exercise] && (
+          <div className="text-sm text-gray-600">Recommendation: {recommended[form.exercise]}</div>
+        )}
+        <input type="text" name="sets" placeholder="Sets" value={form.sets} onChange={handleChange} className="w-full p-2 border" />
+        <input type="text" name="reps" placeholder="Reps" value={form.reps} onChange={handleChange} className="w-full p-2 border" />
+        <input type="text" name="weight" placeholder="Weight (kg)" value={form.weight} onChange={handleChange} className="w-full p-2 border" />
+        <textarea name="notes" placeholder="Notes" value={form.notes} onChange={handleChange} className="w-full p-2 border"></textarea>
+        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Save Session</button>
+      </form>
+
+      <h2 className="text-xl font-semibold mt-6 mb-2">Previous Sessions</h2>
+      <ul className="space-y-2">
+        {sessions.map((s, idx) => (
+          <li key={idx} className="border p-2 rounded">
+            <strong>{s.date}</strong> - {s.exercise} ({s.sets} sets of {s.reps} reps @ {s.weight}kg)
+            <div className="text-sm text-gray-600">{s.notes}</div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
