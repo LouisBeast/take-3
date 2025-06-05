@@ -46,7 +46,7 @@ function WorkoutLogger({ sessionInfo }) {
       log,
     };
     console.log("Workout saved:", workoutData); // You’ll later hook this to localStorage or a database
-    alert("Workout saved!");
+    onWorkoutSaved(workoutData); // Trigger navigation to SessionSummary
   };
 
   return (
