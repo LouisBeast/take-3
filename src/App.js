@@ -1,18 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import WelcomeScreen from "./WelcomeScreen";
-// import your workout logger here
+import WorkoutScreen from "./WorkoutScreen";
+import SummaryScreen from "./SummaryScreen";
+import ProgressChart from "./ProgressChart";
 
 function App() {
-  const [sessionInfo, setSessionInfo] = useState(null);
+  const [sessions, setSessions] = useState([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("workoutSessions");
+    if (saved) {
+      setSessions(JSON.parse(saved));
+    }
+  }, []);
 
   return (
-    <>
-      {!sessionInfo ? (
-        <WelcomeScreen onStart={setSessionInfo} />
-      ) : (
-        <WorkoutLogger sessionInfo={sessionInfo} />
-      )}
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<WelcomeScreen />} />
+        <Route path="/workout" element={<WorkoutScreen />} />
+        <Route path="/summary" element={<SummaryScreen />} />
+        <Route path="/progress" element={<ProgressChart allSessions={sessions} />} />
+      </Routes>
+    </Router>
   );
 }
 
