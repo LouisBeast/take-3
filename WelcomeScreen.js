@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
+import { Link } from 'react-router-dom';
 
 function WelcomeScreen({ onStart }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -17,15 +18,18 @@ function WelcomeScreen({ onStart }) {
 
   const handleStartWorkout = () => {
     if (selectedSplit) {
-      onStart({ date: selectedDate.toISOString().split("T")[0], split: selectedSplit });
+      onStart({
+        date: selectedDate.toISOString().split("T")[0],
+        split: selectedSplit
+      });
     }
   };
 
   const splitOptions = [
-    { label: "Push", value: "Push", color: "bg-orange-500", icon: "🏋️‍♂️" }, // Dip
-    { label: "Pull", value: "Pull", color: "bg-orange-500", icon: "🤸‍♂️" }, // Pull-up hang
+    { label: "Push", value: "Push", color: "bg-orange-500", icon: "🏋️‍♂️" },           // Dip
+    { label: "Pull", value: "Pull", color: "bg-orange-500", icon: "🤸‍♂️" },           // Pull-up hang
     { label: "Legs & Core", value: "Legs & Core", color: "bg-orange-500", icon: "🦵" }, // Hanging leg raise
-    { label: "Skills & Mobility", value: "Skills & Mobility", color: "bg-teal-500", icon: "🤸" }, // Handstand
+    { label: "Skills & Mobility", value: "Skills & Mobility", color: "bg-teal-500", icon: "🤸" } // Handstand
   ];
 
   return (
@@ -69,6 +73,14 @@ function WelcomeScreen({ onStart }) {
       >
         Begin Workout
       </button>
+
+      <Link to="/progress">
+        <button
+          className="w-full mt-4 py-3 rounded font-bold text-white bg-blue-600 hover:bg-blue-700 transition"
+        >
+          📈 See Progress
+        </button>
+      </Link>
     </div>
   );
 }
