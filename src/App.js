@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import WelcomeScreen from "./WelcomeScreen";
 import WorkoutScreen from "./WorkoutScreen";
 import SummaryScreen from "./SummaryScreen";
-import ProgressChart from "./ProgressChart";
+import ProgressScreen from "./screens/ProgressScreen"; // Keep this one
 
 function App() {
   const [sessions, setSessions] = useState([]);
@@ -21,7 +21,7 @@ function App() {
         <Route path="/" element={<WelcomeScreen />} />
         <Route path="/workout" element={<WorkoutScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />
-        <Route path="/progress" element={<ProgressChart allSessions={sessions} />} />
+        <Route path="/progress" element={<ProgressScreen />} />
       </Routes>
     </Router>
   );
