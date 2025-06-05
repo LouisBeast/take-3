@@ -21,7 +21,7 @@ function App() {
         <Route path="/" element={<WelcomeScreen />} />
         <Route path="/workout" element={<WorkoutScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />
-        <Route path="/progress" element={<ProgressScreen />} />
+        <Route path="/progress" element={<ProgressScreen sessions={sessions} />} />
       </Routes>
     </Router>
   );
