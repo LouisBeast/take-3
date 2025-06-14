@@ -1,183 +1,194 @@
 import React, { useState, useEffect } from "react";
 
-export default function WorkoutScreen({ split, date, onBack }) {
-  // Example exercises for each split (you can expand or load from a data file)
-  const exercisesBySplit = {
-    Push: [
-      "Weighted Dips",
-      "Pseudo Planche Push-ups",
-      "Pike Push-ups",
-      "Incline/Decline Push-ups",
-      "Triceps Band Pushdowns"
-    ],
-    Pull: [
-      "Pull-ups",
-      "Assisted Pull-ups",
-      "Negative Pull-ups",
-      "Australian Rows",
-      "Banded Curls",
-      "Dead Hangs"
-    ],
-    "Legs & Core": [
-      "Bulgarian Split Squats",
-      "Wall Sits",
-      "Glute Bridges",
-      "Hanging Leg Raises",
-      "Plank Variations",
-      "Dragon Flag Progressions"
-    ],
-    "Skills & Mobility": [
-      "Handstands",
-      "Front Lever Progressions",
-      "Mobility Drills"
-    ]
-  };
+// Example exercise data by split (expand with your real data)
+const exercisesBySplit = {
+  push: [
+    { name: "Weighted Dips", recommended: "4 sets of 6–8 reps" },
+    { name: "Pseudo Planche Push-ups", recommended: "3 sets of 8–12 reps" },
+    { name: "Pike Push-ups", recommended: "3 sets of 6–10 reps" },
+    { name: "Incline/Decline Push-ups", recommended: "3 sets of 10–15 reps" },
+    { name: "Triceps Band Pushdowns", recommended: "2–3 sets of 12–15 reps" },
+  ],
+  pull: [
+    { name: "Pull-ups", recommended: "3–4 sets of 5–6 reps" },
+    { name: "Assisted Pull-ups", recommended: "2 sets of 8–10 reps", bandSelector: true },
+    { name: "Negative Pull-ups", recommended: "3 sets of 3–5 reps" },
+    { name: "Australian Rows", recommended: "4 sets of 10–12 reps" },
+    { name: "Banded Curls", recommended: "3 sets of 12–15 reps" },
+    { name: "Dead Hangs", recommended: "3 sets of 30 seconds" },
+  ],
+  legs: [
+    { name: "Bulgarian Split Squats", recommended: "4 sets of 8–10 reps per leg" },
+    { name: "Wall Sits", recommended: "3 sets of 30–60 seconds" },
+    { name: "Glute Bridges", recommended: "3 sets of 10–15 reps" },
+    { name: "Hanging Leg Raises", recommended: "3 sets of 10–12 reps" },
+    { name: "Plank Variations", recommended: "3 sets of 30–45 seconds" },
+    { name: "Dragon Flag Progressions", recommended: "3 sets of 6–10 reps" },
+  ],
+  skills: [
+    { name: "Handstand Practice", recommended: "As needed" },
+    { name: "Front Lever Progressions", recommended: "As needed" },
+    { name: "Mobility Drills", recommended: "As needed" },
+  ],
+};
 
-  // Local state for the current workout form data
-  const [formData, setFormData] = useState(() => {
-    // Load previous saved sessions from localStorage for this date & split
-    const stored = localStorage.getItem("workout_sessions") || "[]";
-    const sessions = JSON.parse(stored);
+const bandOptions = ["Red", "Purple", "Grey"];
 
-    // Filter sessions for the date and exercises in this split
-    const filtered = sessions.filter(
-      (s) => s.date === date && exercisesBySplit[split].includes(s.exercise)
-    );
-
-    // Create a lookup map of previous sets/reps/weight by exercise
-    const lookup = {};
-    filtered.forEach((s) => {
-      lookup[s.exercise] = {
-        sets: s.sets,
-        reps: s.reps,
-        weight: s.weight,
-        notes: s.notes,
-        band: s.band || ""
-      };
-    });
-
-    // Initialize form inputs empty, but with last session data for display
-    const initial = {};
-    exercisesBySplit[split].forEach((ex) => {
-      initial[ex] = { sets: "", reps: "", weight: "", notes: "", band: "", previous: lookup[ex] || null };
-    });
-    return initial;
+function WorkoutScreen({ date, split, onExit }) {
+  const [sessions, setSessions] = useState(() => {
+    const saved = localStorage.getItem("workout_sessions");
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // Handle form input changes for exercises
-  function handleChange(exercise, field, value) {
+  // form state per exercise - { exerciseName: { sets, reps, weight, band, difficulty } }
+  const [formData, setFormData] = useState({});
+
+  useEffect(() => {
+    localStorage.setItem("workout_sessions", JSON.stringify(sessions));
+  }, [sessions]);
+
+  const handleInputChange = (exercise, field, value) => {
     setFormData((prev) => ({
       ...prev,
-      [exercise]: { ...prev[exercise], [field]: value }
+      [exercise]: { ...prev[exercise], [field]: value },
     }));
-  }
+  };
 
-  // Save current workout sets to localStorage
-  function handleSave() {
-    const stored = localStorage.getItem("workout_sessions") || "[]";
-    const sessions = JSON.parse(stored);
+  // Find previous session for this date & split - get latest entry for each exercise
+  const lastSessionByExercise = {};
+  const filteredSessions = sessions
+    .filter((s) => s.split === split)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Remove old sessions for this date & split exercises (to avoid duplicates)
-    const filtered = sessions.filter(
-      (s) => !(s.date === date && exercisesBySplit[split].includes(s.exercise))
-    );
+  filteredSessions.forEach((session) => {
+    const exName = session.exercise;
+    if (!lastSessionByExercise[exName]) {
+      lastSessionByExercise[exName] = session;
+    }
+  });
 
-    // Add new session entries for exercises with input
+  const handleSave = () => {
+    // Save all filled-in exercises
+    const newEntries = [];
     Object.entries(formData).forEach(([exercise, data]) => {
-      if (data.sets || data.reps || data.weight || data.notes || data.band) {
-        filtered.push({
+      if (data.sets || data.reps || data.weight || data.band || data.difficulty) {
+        newEntries.push({
           date,
+          split,
           exercise,
-          sets: data.sets,
-          reps: data.reps,
-          weight: data.weight,
-          notes: data.notes,
-          band: data.band
+          ...data,
         });
       }
     });
 
-    localStorage.setItem("workout_sessions", JSON.stringify(filtered));
+    if (newEntries.length === 0) {
+      alert("Please enter data for at least one exercise.");
+      return;
+    }
+
+    setSessions((prev) => [...newEntries, ...prev]);
     alert("Workout saved!");
-  }
+    onExit();
+  };
+
+  const exercises = exercisesBySplit[split] || [];
 
   return (
     <div className="p-4 max-w-xl mx-auto">
+      <h2 className="text-xl font-bold mb-4">
+        Workout: {split.toUpperCase()} - {new Date(date).toDateString()}
+      </h2>
+
       <button
-        onClick={onBack}
-        className="mb-4 px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+        onClick={onExit}
+        className="mb-4 text-blue-600 underline"
+        aria-label="Back to home"
       >
-        ← Back
+        &larr; Back
       </button>
-      <h2 className="text-xl font-bold mb-4">{split} Workout - {date}</h2>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSave();
-        }}
-      >
-        {exercisesBySplit[split].map((exercise) => (
-          <div key={exercise} className="mb-4 border p-3 rounded">
-            <h3 className="font-semibold">{exercise}</h3>
+      <div className="space-y-6 max-h-[70vh] overflow-y-auto mb-6">
+        {exercises.map(({ name, recommended, bandSelector }) => {
+          const prev = lastSessionByExercise[name];
+          const form = formData[name] || {};
 
-            {formData[exercise].previous && (
-              <div className="text-gray-500 text-sm mb-1">
-                Last: {formData[exercise].previous.sets} sets × {formData[exercise].previous.reps} reps @ {formData[exercise].previous.weight}kg{" "}
-                {formData[exercise].previous.band && `(Band: ${formData[exercise].previous.band})`}
+          return (
+            <div key={name} className="border p-3 rounded">
+              <h3 className="font-semibold mb-1">{name}</h3>
+              <div className="text-sm text-gray-600 mb-1">Recommended: {recommended}</div>
+
+              <div className="flex flex-wrap gap-2 items-center mb-2">
+                <input
+                  type="text"
+                  placeholder="Sets"
+                  value={form.sets || ""}
+                  onChange={(e) => handleInputChange(name, "sets", e.target.value)}
+                  className="border p-1 w-16"
+                />
+                <input
+                  type="text"
+                  placeholder="Reps"
+                  value={form.reps || ""}
+                  onChange={(e) => handleInputChange(name, "reps", e.target.value)}
+                  className="border p-1 w-16"
+                />
+                {!bandSelector && (
+                  <input
+                    type="text"
+                    placeholder="Weight (kg)"
+                    value={form.weight || ""}
+                    onChange={(e) => handleInputChange(name, "weight", e.target.value)}
+                    className="border p-1 w-24"
+                  />
+                )}
+                {bandSelector && (
+                  <select
+                    value={form.band || ""}
+                    onChange={(e) => handleInputChange(name, "band", e.target.value)}
+                    className="border p-1 w-32"
+                  >
+                    <option value="">Select Band</option>
+                    {bandOptions.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <select
+                  value={form.difficulty || ""}
+                  onChange={(e) => handleInputChange(name, "difficulty", e.target.value)}
+                  className="border p-1 w-24"
+                >
+                  <option value="">Difficulty</option>
+                  <option value="Easy">Easy</option>
+                  <option value="OK">OK</option>
+                  <option value="Hard">Hard</option>
+                </select>
               </div>
-            )}
 
-            <input
-              type="text"
-              placeholder="Sets"
-              className="border p-1 mr-2 w-16"
-              value={formData[exercise].sets}
-              onChange={(e) => handleChange(exercise, "sets", e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Reps"
-              className="border p-1 mr-2 w-16"
-              value={formData[exercise].reps}
-              onChange={(e) => handleChange(exercise, "reps", e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Weight (kg)"
-              className="border p-1 mr-2 w-20"
-              value={formData[exercise].weight}
-              onChange={(e) => handleChange(exercise, "weight", e.target.value)}
-            />
-            {exercise === "Assisted Pull-ups" && (
-              <select
-                className="border p-1 w-28"
-                value={formData[exercise].band}
-                onChange={(e) => handleChange(exercise, "band", e.target.value)}
-              >
-                <option value="">Select Band</option>
-                <option value="Red">Red</option>
-                <option value="Purple">Purple</option>
-                <option value="Grey">Grey</option>
-              </select>
-            )}
+              {prev && (
+                <div className="text-gray-400 text-sm italic">
+                  Last: {prev.sets || "-"} sets, {prev.reps || "-"} reps
+                  {prev.weight ? `, ${prev.weight} kg` : ""}
+                  {prev.band ? `, Band: ${prev.band}` : ""}
+                  {prev.difficulty ? `, Difficulty: ${prev.difficulty}` : ""}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-            <textarea
-              placeholder="Notes"
-              className="border p-1 mt-2 w-full"
-              value={formData[exercise].notes}
-              onChange={(e) => handleChange(exercise, "notes", e.target.value)}
-            />
-          </div>
-        ))}
-
-        <button
-          type="submit"
-          className="bg-red-600 text-white px-5 py-2 rounded font-semibold"
-        >
-          Save Workout
-        </button>
-      </form>
+      <button
+        onClick={handleSave}
+        className="bg-green-600 text-white py-3 px-6 rounded font-bold w-full"
+      >
+        Save Workout
+      </button>
     </div>
   );
 }
+
+export default WorkoutScreen;
