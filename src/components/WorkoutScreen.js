@@ -2,24 +2,33 @@ import React, { useState, useEffect } from "react";
 
 const exercisesBySplit = {
   push: [
-    { name: "Dips", recommended: "4 sets of 8–10 reps" },
     { name: "Weighted Dips", recommended: "4 sets of 6–8 reps" },
-    { name: "Push-ups", recommended: "3 sets of 10–15 reps" },
+    { name: "Pseudo Planche Push-ups", recommended: "3 sets of 8–12 reps" },
+    { name: "Pike Push-ups (or Elevated Pike)", recommended: "3 sets of 6–10 reps" },
+    { name: "Incline/Decline Push-ups (progress to Ring Push-ups)", recommended: "3 sets of 10–15 reps" },
+    { name: "Triceps Band Pushdowns or Diamond Push-ups", recommended: "2–3 sets of 12–15 reps" },
   ],
   pull: [
-    { name: "Pull-ups", recommended: "3 sets of 5–8 reps" },
-    { name: "Assisted Pull-ups", recommended: "3 sets of 8–10 reps" },
-    { name: "Chin-ups", recommended: "3 sets of 6–10 reps" },
+    { name: "Pull-ups (Unassisted)", recommended: "3–4 sets of 5–6 reps" },
+    { name: "Assisted Pull-ups (Band: Red, Purple, Grey)", recommended: "2 sets of 8–10 reps" },
+    { name: "Negative Pull-ups (3–5 sec descent)", recommended: "3 sets of 3–5 reps" },
+    { name: "Australian Rows / Ring Rows", recommended: "4 sets of 10–12 reps" },
+    { name: "Banded Curls / Towel Rows", recommended: "3 sets of 12–15 reps" },
+    { name: "Dead Hangs or Scapular Pull-ups", recommended: "3 sets of 30 sec" },
   ],
   legs: [
-    { name: "Pistol Squats", recommended: "3 sets of 5 reps per leg" },
-    { name: "Leg Raises", recommended: "3 sets of 10–15 reps" },
-    { name: "Squats", recommended: "4 sets of 10–15 reps" },
+    { name: "Bulgarian Split Squats", recommended: "4 sets of 8–10 per leg" },
+    { name: "Wall Sits or Step-ups", recommended: "3 sets of 30–60 sec" },
+    { name: "Glute Bridges / Hip Thrusts", recommended: "3 sets of 10–15 reps" },
+    { name: "Hanging Leg Raises", recommended: "3 sets of 10–12 reps" },
+    { name: "Plank Variations (Side Planks, RKC, etc.)", recommended: "3 sets of 30–45 sec" },
+    { name: "Dragon Flag Progressions / Reverse Crunches", recommended: "3 sets of 6–10 reps" },
   ],
   skills: [
-    { name: "Handstand Hold", recommended: "3 holds of 20-40 seconds" },
-    { name: "Front Lever Hold", recommended: "3 holds of 10-20 seconds" },
-    { name: "Planche Progression", recommended: "Practice 5 minutes" },
+    { name: "Handstand Practice", recommended: "3 sets of 30 sec hold" },
+    { name: "Front Lever Progression", recommended: "3 sets of 10–15 sec hold" },
+    { name: "Skin the Cat", recommended: "3 sets of 5–8 reps" },
+    { name: "Wall Shoulder Flexibility Drill", recommended: "3 sets of 30 sec hold" },
   ],
 };
 
@@ -150,7 +159,7 @@ function WorkoutScreen({ date, split, onExit }) {
                   className="w-16 p-1 border"
                 />
                 {/* Weight input only if not Assisted Pull-ups */}
-                {ex.name !== "Assisted Pull-ups" && (
+                {ex.name !== "Assisted Pull-ups (Band: Red, Purple, Grey)" && (
                   <input
                     type="text"
                     placeholder="Weight (kg)"
@@ -160,7 +169,7 @@ function WorkoutScreen({ date, split, onExit }) {
                   />
                 )}
                 {/* Band selector only if Assisted Pull-ups */}
-                {ex.name === "Assisted Pull-ups" && (
+                {ex.name === "Assisted Pull-ups (Band: Red, Purple, Grey)" && (
                   <select
                     value={set.band}
                     onChange={(e) => handleInputChange(ex.name, idx, "band", e.target.value)}
