@@ -1,5 +1,17 @@
 import React, { useState } from "react";
-import WorkoutScreen from "./components/WorkoutScreen";
+import WorkoutScreen from "./WorkoutScreen";
+
+// Import SVG icons
+import PushIcon from "./icons/push.svg";
+import PullIcon from "./icons/pull.svg";
+import LegsIcon from "./icons/legs.svg";
+import SkillsIcon from "./icons/skills.svg";
+
+function formatDateDisplay(dateStr) {
+  const options = { weekday: "long", day: "numeric", month: "long", year: "numeric" };
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, options);
+}
 
 function App() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -7,10 +19,10 @@ function App() {
   const [started, setStarted] = useState(false);
 
   const splits = [
-    { id: "push", label: "Push" },
-    { id: "pull", label: "Pull" },
-    { id: "legs", label: "Legs & Core" },
-    { id: "skills", label: "Skills & Mobility" },
+    { id: "push", label: "Push", icon: PushIcon },
+    { id: "pull", label: "Pull", icon: PullIcon },
+    { id: "legs", label: "Legs & Core", icon: LegsIcon },
+    { id: "skills", label: "Skills & Mobility", icon: SkillsIcon },
   ];
 
   const handleBegin = () => {
@@ -26,7 +38,7 @@ function App() {
       <div className="p-4 max-w-xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">CalisTracker</h1>
 
-        <label className="block mb-2 font-semibold" htmlFor="date">
+        <label className="block mb-1 font-semibold" htmlFor="date">
           Select Date:
         </label>
         <input
@@ -34,8 +46,9 @@ function App() {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="border p-2 mb-4 w-full"
+          className="border p-2 mb-1 w-full"
         />
+        <div className="mb-4 text-gray-600 italic">{formatDateDisplay(date)}</div>
 
         <label className="block mb-2 font-semibold">Select Workout Split:</label>
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -43,7 +56,7 @@ function App() {
             <button
               key={s.id}
               onClick={() => setSplit(s.id)}
-              className={`p-4 rounded text-white font-semibold ${
+              className={`flex flex-col items-center p-4 rounded text-white font-semibold ${
                 split === s.id
                   ? s.id === "skills"
                     ? "bg-teal-500"
@@ -51,6 +64,7 @@ function App() {
                   : "bg-gray-300 text-black"
               }`}
             >
+              <img src={s.icon} alt={`${s.label} icon`} className="mb-2 w-12 h-12" />
               {s.label}
             </button>
           ))}
@@ -66,6 +80,7 @@ function App() {
     );
   }
 
+  // When workout started, show the workout screen, passing props
   return <WorkoutScreen date={date} split={split} onExit={() => setStarted(false)} />;
 }
 
