@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import WorkoutScreen from "./WorkoutScreen";
+import WorkoutScreen from "./components/WorkoutScreen";
 
 // Import SVG icons
 import PushIcon from "./icons/push.svg";
