@@ -1,253 +1,300 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 
-// Recommended exercises for each split and their recommended sets/reps
-const splitExercises = {
+const exercisesBySplit = {
   push: [
-    { name: "Push-ups", recommended: "3 sets of 10–15 reps" },
     { name: "Dips", recommended: "4 sets of 8–10 reps" },
-    { name: "Pike Push-ups", recommended: "3 sets of 6–8 reps" },
+    { name: "Weighted Dips", recommended: "4 sets of 6–8 reps" },
+    { name: "Push-ups", recommended: "3 sets of 10–15 reps" },
   ],
   pull: [
     { name: "Pull-ups", recommended: "3 sets of 5–8 reps" },
     { name: "Assisted Pull-ups", recommended: "3 sets of 8–10 reps" },
-    { name: "Chin-ups", recommended: "3 sets of 6–8 reps" },
+    { name: "Chin-ups", recommended: "3 sets of 6–10 reps" },
   ],
   legs: [
-    { name: "Pistol Squats", recommended: "3 sets of 5–6 reps" },
-    { name: "Leg Raises", recommended: "4 sets of 10–15 reps" },
-    { name: "Glute Bridges", recommended: "3 sets of 12–15 reps" },
+    { name: "Pistol Squats", recommended: "3 sets of 5 reps per leg" },
+    { name: "Leg Raises", recommended: "3 sets of 10–15 reps" },
+    { name: "Squats", recommended: "4 sets of 10–15 reps" },
   ],
   skills: [
-    { name: "Handstands", recommended: "Practice holds 3 x 30 seconds" },
-    { name: "Front Lever", recommended: "Practice holds 3 x 10 seconds" },
-    { name: "L-Sit", recommended: "Practice holds 3 x 15 seconds" },
+    { name: "Handstand Hold", recommended: "3 holds of 20-40 seconds" },
+    { name: "Front Lever Hold", recommended: "3 holds of 10-20 seconds" },
+    { name: "Planche Progression", recommended: "Practice 5 minutes" },
   ],
 };
 
-// Difficulty options for dropdown
-const difficulties = ["Easy", "OK", "Hard"];
-
-// Helper to load previous sessions from localStorage
-function loadSessions() {
+// Retrieve previous sessions from localStorage
+function getPreviousSessions() {
   const stored = localStorage.getItem("workout_sessions");
   return stored ? JSON.parse(stored) : [];
 }
 
-export default function WorkoutScreen({ date, split, onExit }) {
-  const exercises = splitExercises[split] || [];
-  const [sessions, setSessions] = useState(loadSessions);
-  
-  // Form state for each exercise by name
-  // Structure: { [exerciseName]: { sets, reps, weight, difficulty } }
-  const [formData, setFormData] = useState(() => {
-    const initial = {};
-    exercises.forEach(({ name }) => {
-      initial[name] = { sets: "", reps: "", weight: "", difficulty: "" };
-    });
-    return initial;
-  });
+// Find the most recent session data for an exercise & split
+function getLastSession(sessions, split, exerciseName) {
+  // Filter by split and exercise and sort by date descending
+  const filtered = sessions
+    .filter(
+      (s) => s.split === split && s.exercise === exerciseName
+    )
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  return filtered.length > 0 ? filtered[0] : null;
+}
 
-  // Load last session data for these exercises, keyed by exercise name
-  const lastSession = (() => {
-    // Find last session for this date and split — fallback to latest for that split
-    const filtered = sessions
-      .filter((s) => s.split === split)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-    if (filtered.length === 0) return {};
-    // For simplicity, return data of most recent session
-    return filtered[0].exercises || {};
-  })();
+function WorkoutScreen({ date, split, onExit }) {
+  const [sessions, setSessions] = useState(getPreviousSessions);
+  const [inputs, setInputs] = useState({}); // { exerciseName: [{sets, reps, weight, band, difficulty}] }
+  const [restTimerVisible, setRestTimerVisible] = useState(false);
+  const [restSeconds, setRestSeconds] = useState(30);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(restSeconds);
 
-  // Rest timer state
-  const [timerActive, setTimerActive] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const timerRef = useRef(null);
+  const exercises = exercisesBySplit[split] || [];
 
+  // Handle rest timer countdown
   useEffect(() => {
-    if (timerActive && timeLeft > 0) {
-      timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+    let interval = null;
+    if (timerRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((t) => t - 1);
+      }, 1000);
     } else if (timeLeft === 0) {
-      setTimerActive(false);
+      setTimerRunning(false);
     }
-    return () => clearTimeout(timerRef.current);
-  }, [timerActive, timeLeft]);
+    return () => clearInterval(interval);
+  }, [timerRunning, timeLeft]);
 
-  // Handlers
-  const handleInputChange = (exercise, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [exercise]: {
-        ...prev[exercise],
-        [field]: value,
-      },
-    }));
+  // Reset timer if restSeconds changes
+  useEffect(() => {
+    setTimeLeft(restSeconds);
+    setTimerRunning(false);
+  }, [restSeconds]);
+
+  const handleInputChange = (exercise, index, field, value) => {
+    setInputs((prev) => {
+      const exerciseInputs = prev[exercise] ? [...prev[exercise]] : [];
+      exerciseInputs[index] = { ...exerciseInputs[index], [field]: value };
+      return { ...prev, [exercise]: exerciseInputs };
+    });
   };
 
-  const handleSaveWorkout = () => {
-    // Compose session object
-    const sessionObj = {
-      date,
-      split,
-      exercises: {},
-    };
-    exercises.forEach(({ name }) => {
-      sessionObj.exercises[name] = formData[name];
+  const addSet = (exercise) => {
+    setInputs((prev) => {
+      const exerciseInputs = prev[exercise] ? [...prev[exercise]] : [];
+      exerciseInputs.push({ sets: "", reps: "", weight: "", band: "", difficulty: "ok" });
+      return { ...prev, [exercise]: exerciseInputs };
     });
+  };
 
-    const updatedSessions = [...sessions, sessionObj];
-    setSessions(updatedSessions);
-    localStorage.setItem("workout_sessions", JSON.stringify(updatedSessions));
+  const removeSet = (exercise, index) => {
+    setInputs((prev) => {
+      const exerciseInputs = prev[exercise] ? [...prev[exercise]] : [];
+      exerciseInputs.splice(index, 1);
+      return { ...prev, [exercise]: exerciseInputs };
+    });
+  };
 
+  const handleSave = () => {
+    // Flatten inputs into session entries and save to localStorage
+    let newSessions = [...sessions];
+    Object.entries(inputs).forEach(([exerciseName, sets]) => {
+      sets.forEach((set) => {
+        if (set.sets && set.reps) {
+          newSessions.push({
+            date,
+            split,
+            exercise: exerciseName,
+            sets: set.sets,
+            reps: set.reps,
+            weight: set.weight,
+            band: set.band,
+            difficulty: set.difficulty,
+          });
+        }
+      });
+    });
+    setSessions(newSessions);
+    localStorage.setItem("workout_sessions", JSON.stringify(newSessions));
     alert("Workout saved!");
     onExit();
   };
 
   return (
     <div className="p-4 max-w-xl mx-auto relative">
-
-      <button
-        className="mb-4 text-blue-600 underline"
-        onClick={onExit}
-      >
-        ← Back to Welcome Screen
-      </button>
-
-      <h2 className="text-xl font-bold mb-4 capitalize">
-        {split} workout for {new Date(date).toDateString()}
+      <h2 className="text-xl font-bold mb-4">
+        Workout: {split.charAt(0).toUpperCase() + split.slice(1)} - {new Date(date).toLocaleDateString()}
       </h2>
 
-      <div className="space-y-6">
-        {exercises.map(({ name, recommended }) => {
-          const last = lastSession[name] || {};
-          return (
-            <div key={name} className="border p-4 rounded bg-gray-50">
-              <h3 className="font-semibold mb-1">{name}</h3>
-              <div className="mb-1 text-gray-600 italic text-sm">{recommended}</div>
+      {exercises.map((ex) => {
+        const previous = getLastSession(sessions, split, ex.name);
+        const exerciseInputs = inputs[ex.name] || [];
 
-              <div className="flex flex-wrap gap-3 mb-2">
-                <label className="flex flex-col">
-                  Sets
+        return (
+          <div key={ex.name} className="mb-6 border p-3 rounded">
+            <h3 className="font-semibold">{ex.name}</h3>
+            <div className="text-sm italic text-gray-600 mb-1">Recommended: {ex.recommended}</div>
+
+            {exerciseInputs.map((set, idx) => (
+              <div key={idx} className="flex flex-wrap gap-2 mb-1 items-center">
+                <input
+                  type="text"
+                  placeholder="Sets"
+                  value={set.sets}
+                  onChange={(e) => handleInputChange(ex.name, idx, "sets", e.target.value)}
+                  className="w-16 p-1 border"
+                />
+                <input
+                  type="text"
+                  placeholder="Reps"
+                  value={set.reps}
+                  onChange={(e) => handleInputChange(ex.name, idx, "reps", e.target.value)}
+                  className="w-16 p-1 border"
+                />
+                {/* Weight input only if not Assisted Pull-ups */}
+                {ex.name !== "Assisted Pull-ups" && (
                   <input
-                    type="number"
-                    min="0"
-                    value={formData[name].sets}
-                    onChange={(e) => handleInputChange(name, "sets", e.target.value)}
-                    className="border p-1 w-20"
+                    type="text"
+                    placeholder="Weight (kg)"
+                    value={set.weight}
+                    onChange={(e) => handleInputChange(ex.name, idx, "weight", e.target.value)}
+                    className="w-20 p-1 border"
                   />
-                  {last.sets && (
-                    <small className="text-gray-400">Last: {last.sets}</small>
-                  )}
-                </label>
-
-                <label className="flex flex-col">
-                  Reps
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData[name].reps}
-                    onChange={(e) => handleInputChange(name, "reps", e.target.value)}
-                    className="border p-1 w-20"
-                  />
-                  {last.reps && (
-                    <small className="text-gray-400">Last: {last.reps}</small>
-                  )}
-                </label>
-
-                <label className="flex flex-col">
-                  Weight (kg)
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData[name].weight}
-                    onChange={(e) => handleInputChange(name, "weight", e.target.value)}
-                    className="border p-1 w-24"
-                  />
-                  {last.weight && (
-                    <small className="text-gray-400">Last: {last.weight}</small>
-                  )}
-                </label>
-
-                <label className="flex flex-col">
-                  Difficulty
+                )}
+                {/* Band selector only if Assisted Pull-ups */}
+                {ex.name === "Assisted Pull-ups" && (
                   <select
-                    value={formData[name].difficulty}
-                    onChange={(e) => handleInputChange(name, "difficulty", e.target.value)}
-                    className="border p-1 w-24"
+                    value={set.band}
+                    onChange={(e) => handleInputChange(ex.name, idx, "band", e.target.value)}
+                    className="w-24 p-1 border"
                   >
-                    <option value="">Select</option>
-                    {difficulties.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
+                    <option value="">Band</option>
+                    <option value="Red">Red</option>
+                    <option value="Purple">Purple</option>
+                    <option value="Grey">Grey</option>
                   </select>
-                </label>
+                )}
+
+                <select
+                  value={set.difficulty}
+                  onChange={(e) => handleInputChange(ex.name, idx, "difficulty", e.target.value)}
+                  className="w-20 p-1 border"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="ok">Ok</option>
+                  <option value="hard">Hard</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => removeSet(ex.name, idx)}
+                  className="text-red-600 font-bold px-2"
+                >
+                  &times;
+                </button>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            ))}
 
-      {/* Save Workout Button */}
-      <button
-        onClick={handleSaveWorkout}
-        className="mt-6 bg-green-600 text-white px-6 py-2 rounded font-semibold"
-      >
-        Save Workout
-      </button>
+            <button
+              type="button"
+              onClick={() => addSet(ex.name)}
+              className="text-blue-600 font-semibold text-sm"
+            >
+              + Add Set
+            </button>
 
-      {/* Floating Rest Timer */}
+            {/* Previous session info in grey */}
+            {previous && (
+              <div className="mt-2 text-xs text-gray-500 italic">
+                Last session: {previous.sets} sets, {previous.reps} reps
+                {previous.weight && `, ${previous.weight}kg`}
+                {previous.band && `, band: ${previous.band}`}
+                , difficulty: {previous.difficulty}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Rest Timer Toggle and Display */}
       <div
         style={{
           position: "fixed",
-          bottom: "20px",
-          right: "20px",
-          backgroundColor: "#f3f4f6",
-          border: "1px solid #ccc",
-          borderRadius: "10px",
-          padding: "12px",
-          width: "160px",
-          boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-          zIndex: 1000,
+          bottom: 20,
+          right: 20,
+          background: "#eee",
+          padding: 10,
+          borderRadius: 8,
+          boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+          width: 160,
+          userSelect: "none",
         }}
       >
         <div className="flex justify-between items-center mb-2">
           <strong>Rest Timer</strong>
           <button
-            onClick={() => setTimerActive(false)}
-            title="Stop timer"
-            className="text-red-600 font-bold"
+            onClick={() => setRestTimerVisible(!restTimerVisible)}
+            className="text-sm text-blue-600"
           >
-            ×
+            {restTimerVisible ? "Hide" : "Show"}
           </button>
         </div>
 
-        <div className="text-3xl text-center mb-2 font-mono">{timeLeft}s</div>
+        {restTimerVisible && (
+          <>
+            <div className="flex justify-between mb-2">
+              {[30, 60, 90].map((sec) => (
+                <button
+                  key={sec}
+                  onClick={() => setRestSeconds(sec)}
+                  className={`px-2 py-1 rounded ${
+                    restSeconds === sec ? "bg-blue-600 text-white" : "bg-gray-300"
+                  }`}
+                >
+                  {sec}s
+                </button>
+              ))}
+            </div>
 
-        <div className="flex justify-between">
-          {[30, 60, 90].map((sec) => (
+            <div className="text-center text-2xl mb-2">{timeLeft}s</div>
+
+            {!timerRunning && (
+              <button
+                onClick={() => setTimerRunning(true)}
+                className="w-full bg-green-600 text-white py-1 rounded"
+              >
+                Start
+              </button>
+            )}
+            {timerRunning && (
+              <button
+                onClick={() => setTimerRunning(false)}
+                className="w-full bg-red-600 text-white py-1 rounded"
+              >
+                Stop
+              </button>
+            )}
             <button
-              key={sec}
               onClick={() => {
-                setTimeLeft(sec);
-                setTimerActive(true);
+                setTimerRunning(false);
+                setTimeLeft(restSeconds);
               }}
-              className="bg-blue-500 text-white rounded px-2 py-1 text-sm"
+              className="w-full bg-gray-400 text-white py-1 rounded mt-1"
             >
-              {sec}s
+              Reset
             </button>
-          ))}
-        </div>
-
-        {!timerActive && (
-          <button
-            onClick={() => setTimerActive(true)}
-            className="mt-2 w-full bg-green-600 text-white rounded py-1 font-semibold"
-          >
-            Start
-          </button>
+          </>
         )}
+      </div>
+
+      <div className="mt-6 flex justify-between">
+        <button onClick={onExit} className="bg-gray-500 text-white px-4 py-2 rounded">
+          Cancel
+        </button>
+        <button onClick={handleSave} className="bg-red-600 text-white px-4 py-2 rounded">
+          Save Workout
+        </button>
       </div>
     </div>
   );
 }
+
+export default WorkoutScreen;
